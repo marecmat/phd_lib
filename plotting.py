@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 PATH = os.path.dirname(__file__)
 sys.path.append(PATH+"/../")
 from phd_lib.colormaps import nice_colors
-def matplot_header(fontsize=15, tex=True, transparent_background=True, use_gui=True, colors=False):
+def matplot_header(fontsize=15, tex=True, transparent_background=True, use_gui=True, colors=False, tex_packages=''):
 
     plt.rc('font', **{
         'family': 'sans-serif',
@@ -19,7 +19,7 @@ def matplot_header(fontsize=15, tex=True, transparent_background=True, use_gui=T
     if tex:
         plt.rc('text', usetex=True)
         plt.rc('mathtext', fontset='cm')
-        # plt.rc('text.latex', preamble=r"\usepackage{amsmath}")
+        plt.rc('text.latex', preamble=tex_packages)
 
     match colors:
         case 'palette': cycle = ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"]

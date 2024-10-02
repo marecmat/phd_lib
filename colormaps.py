@@ -2,6 +2,12 @@ import os
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
+def map_hex_to_rgb(colors):
+    return np.array([[
+        int(i, 16)/255 for i in list(map(''.join, zip(*[iter(c)]*2)))
+    ] for c in colors])
+
+
 def nice_colors(i=False):
     cycle = {'b':'#3593CC', 'y':'#D49902', 'p':'#B34BBE',  'g':'#26C485', 'r':'#DB5461'}
     if not i:
@@ -21,20 +27,17 @@ def BlKPk(N=256):
     # import struct
     # colors = ["ff0e5c", "ff6aad", "999999", "80c9e6", "8bdcff"]
     colors = ["8bdcff", "80c9e6", "999999", "e0777e", "e01d4e"]
-    cm_data = np.array([[int(i, 16)/255 for i in list(map(''.join, zip(*[iter(c)]*2)))] for c in colors])
-    return LinearSegmentedColormap.from_list('BlKPk', cm_data, N=N)
+    return LinearSegmentedColormap.from_list('BlKPk', map_hex_to_rgb(colors), N=N)
 
 def PiKYG(N=256):
     # import struct
     colors = ["940557", "eca9d2", "ffe4af", "99cd5f", "2a6219"]
-    cm_data = np.array([[int(i, 16)/255 for i in list(map(''.join, zip(*[iter(c)]*2)))] for c in colors])
-    return LinearSegmentedColormap.from_list('PiKYG', cm_data, N=N)
+    return LinearSegmentedColormap.from_list('PiKYG', map_hex_to_rgb(colors), N=N)
 
 def OrKGr(N=256):
     # import struct
     colors = ["ff8d00", "ffae7b", "fff983", "80ffad", "129300"]
-    cm_data = np.array([[int(i, 16)/255 for i in list(map(''.join, zip(*[iter(c)]*2)))] for c in colors])
-    return LinearSegmentedColormap.from_list('OrKGr', cm_data, N=N)
+    return LinearSegmentedColormap.from_list('OrKGr', map_hex_to_rgb(colors), N=N)
 
 def parula(N=256):
     cm_data = np.loadtxt(os.path.dirname(__file__)+'/data/parula_data.csv', delimiter=',')

@@ -31,7 +31,10 @@ def JCA(om, porous_material, saturating_fluid, return_F=False, return_G=False):
         return K_eq, rho_eq, F,G
     return K_eq, rho_eq
 
-def  biot(om, porous_material, saturating_fluid, fullBiotcoefficients=True):
+def  biot(om, porous_material, saturating_fluid, 
+          fullBiotcoefficients=True, dict_out=False, 
+          u_p_formulation=False):
+    
     """
     Computes the Biot coefficient, equivalent densities and wavenumbers for poroelastic materials
 
@@ -92,5 +95,24 @@ def  biot(om, porous_material, saturating_fluid, fullBiotcoefficients=True):
 
     k1, k2, k3 = sqrt(delta1_sq), sqrt(delta2_sq), sqrt(delta3_sq)
 
-    #      0        1   2    3    4    5   6   7  8  9  10    11       12      13
-    return Kf, rho_eq, mu1, mu2, mu3, k1, k2, k3, P, Q, R, rho11t, rho12t, rho22t
+    if dict_out:
+        out_dict = {
+            'Kf':Kf, 'rho_eq':rho_eq, 'mu1':mu1, 'mu2':mu2, 'mu3':mu3, 'k1':k1, 'k2':k2, 'k3':k3, 
+            'P':P, 'Q':Q, 'R':R, 'rho11t':rho11t, 'rho12t':rho12t, 'rho22t':rho22t
+        }
+        if u_p_formulation: 
+            out_dict.update({
+                'gamma_t' : p['phi']*(rho12t/rho22t - Q/R),
+                'rho_t'   : rho11t - rho12t**2/rho22t, 
+                'p_hat'   : P - Q**2/R,
+                'a_hat'   : P - Q**2/R - 2*p['N']
+            })
+        return out_dict
+    else:
+        out_list = Kf, rho_eq, mu1, mu2, mu3, k1, k2, k3, P, Q, R, rho11t, rho12t, rho22t
+    #              0        1   2    3    4    5   6   7  8  9  10    11       12      13
+        if u_p_formulation: out_list.extend([
+            p['phi']*(rho12t/rho22t - Q/R), rho11t - rho12t**2/rho22t, 
+            P - Q**2/R, out_dict['p_hat'] - 2*p['N']])
+    
+        return out_list

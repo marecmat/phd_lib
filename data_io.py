@@ -1,8 +1,12 @@
 import numpy as np 
 
-def require_directory_input(suffix=''):
+def require_directory_input(parser=None, suffix=''):
     import argparse
-    parser = argparse.ArgumentParser()
+    
+    # print(type(parser))
+    if not isinstance(parser, argparse.ArgumentParser):
+        parser = argparse.ArgumentParser()
+    
     parser.add_argument("-d", "--directory")
     args = parser.parse_args()
     directory = args.directory
@@ -14,6 +18,25 @@ def require_directory_input(suffix=''):
     if suffix != '': directory += suffix
 
     return directory
+
+def add_arguments(arguments):
+    """
+    Pass a list in the form of 
+        [
+            ...
+            (- <short_flag>, -- <long_flag>, dict(args)),
+            ...
+        ]
+    
+    Returns a dict of the parsed args
+    """
+    import argparse
+    parser = argparse.ArgumentParser()
+
+    for arg in arguments:
+        parser.add_argument(arg[0], arg[1], **arg[2])
+
+    return vars(parser.parse_args()), parser
 
 
 
@@ -82,7 +105,7 @@ def loadComsolComplexData(filename, sep=',', header=4, skipfooter=0):
 
     return pd.read_csv(
         f'{filename}', engine='python', sep=sep, 
-        header=header, skipfooter=skipfooter).applymap(TOcomplex).values 
+        header=header, skipfooter=skipfooter).map(TOcomplex).values 
 
 
 def writeSimulation(dirName, infoDict, files, overwrite=False):    
@@ -108,7 +131,7 @@ def writeSimulation(dirName, infoDict, files, overwrite=False):
         elif len(data.shape) < 3: 
             np.savetxt(dirName+name, data, delimiter=',')
         elif len(data.shape) >= 3:
-            np.save(dirName+name, data)
+            np.save(dirName+name, data, allow_pickle=False)
         
             # dir3Darrayname = dirName+name
             # if not os.path.exists(dir3Darrayname): 
@@ -156,3 +179,27 @@ def load_data(directory, type):
 def getDate():
     from datetime import datetime
     return datetime.now().strftime('%Y%m%d_%H%M%S')
+
+
+
+def load_yaml_as_my_dicts(material):
+    import yaml
+    # Import the yaml, parse it as a dict object
+    with open(f'materials/{material}.yaml', 'r') as file:
+        dic = yaml.safe_load(file)
+
+    # The yaml library sucks and does not read values 
+    # w/o a dot as floats it means that e.g 400e-6 is 
+    # cast as a float, try to match the values when possible
+    for key, val in dic.items():
+        try:
+            dic[key] = float(val) 
+        except: pass
+
+    # The labels used in pyPlanes differ from my routines, 
+    # match those as: 
+    dic['tort'] = dic['alpha']
+    dic['ld']   = dic['Lambda']
+    dic['ldp']  = dic['Lambda_prime']
+
+    return dic
