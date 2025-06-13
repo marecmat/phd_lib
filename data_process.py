@@ -1,7 +1,7 @@
 import numpy as np 
 
-def find_nearest(array, value, getValue=False):
-    idx = (np.abs(array - value)).argmin()
+def find_nearest(array, value, func=np.real, getValue=False):
+    idx = (np.abs(func(array) - func(value))).argmin()
     if getValue:
         return array[idx]
     else: return idx
@@ -32,3 +32,8 @@ def reduceComplexArrayBounds(array, realLimits, imagLimits):
     )
     return array[slc], slc
 
+def list_of_lists_to_array(liste, pad_value=None, dtype=float):
+    """
+    https://stackoverflow.com/questions/43146266/convert-list-of-lists-with-different-lengths-to-a-numpy-array
+    """
+    return np.array([[*i, *[pad_value]*(len(max(liste, key=len)) - len(i))] for i in list(liste)], dtype=dtype)

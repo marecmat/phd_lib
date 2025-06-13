@@ -39,8 +39,9 @@ def OrKGr(N=256):
     colors = ["ff8d00", "ffae7b", "fff983", "80ffad", "129300"]
     return LinearSegmentedColormap.from_list('OrKGr', map_hex_to_rgb(colors), N=N)
 
-def parula(N=256):
+def parula(N=256, r=False):
     cm_data = np.loadtxt(os.path.dirname(__file__)+'/data/parula_data.csv', delimiter=',')
+    if r: cm_data = cm_data[::-1]
     return LinearSegmentedColormap.from_list('parula', cm_data, N=N)
 
 def rgb_white2alpha(rgb, ensure_increasing=False):

@@ -105,7 +105,7 @@ def loadComsolComplexData(filename, sep=',', header=4, skipfooter=0):
 
     return pd.read_csv(
         f'{filename}', engine='python', sep=sep, 
-        header=header, skipfooter=skipfooter).map(TOcomplex).values 
+        header=header, skipfooter=skipfooter).map(TOcomplex) 
 
 
 def writeSimulation(dirName, infoDict, files, overwrite=False):    
@@ -182,10 +182,13 @@ def getDate():
 
 
 
-def load_yaml_as_my_dicts(material):
+def load_yaml_as_my_dicts(material, directory=''):
     import yaml
     # Import the yaml, parse it as a dict object
-    with open(f'materials/{material}.yaml', 'r') as file:
+    path = f'materials/{material}.yaml'
+    if directory != '':
+        path = directory+path
+    with open(path, 'r') as file:
         dic = yaml.safe_load(file)
 
     # The yaml library sucks and does not read values 
@@ -198,8 +201,11 @@ def load_yaml_as_my_dicts(material):
 
     # The labels used in pyPlanes differ from my routines, 
     # match those as: 
-    dic['tort'] = dic['alpha']
-    dic['ld']   = dic['Lambda']
-    dic['ldp']  = dic['Lambda_prime']
+    if dic['medium_type'] in ['eqf', 'eqf_lossless', 'pem']:
+        dic['tort'] = dic['alpha']
+        dic['ld']   = dic['Lambda']
+        dic['ldp']  = dic['Lambda_prime']
 
+    if dic['medium_type'] == 'pem':
+        dic['rho1'] = dic['rho_1']
     return dic
