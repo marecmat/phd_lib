@@ -1,3 +1,4 @@
+import os 
 import numpy as np 
 
 def require_directory_input(parser=None, suffix=''):
@@ -181,7 +182,6 @@ def getDate():
     return datetime.now().strftime('%Y%m%d_%H%M%S')
 
 
-
 def load_yaml_as_my_dicts(material, directory=''):
     import yaml
     # Import the yaml, parse it as a dict object
@@ -209,3 +209,31 @@ def load_yaml_as_my_dicts(material, directory=''):
     if dic['medium_type'] == 'pem':
         dic['rho1'] = dic['rho_1']
     return dic
+
+def run_batch(func, params, nb_threads=None, output=False):
+    from multiprocessing import Pool, cpu_count
+
+    if os.uname()[1] == 'helmholtz':
+        # if running on laum server, do not use all cores
+        max_cpu = int(cpu_count()/2)
+    else: 
+        max_cpu = cpu_count()
+
+    nb_instances = len(params)
+    if nb_threads is None:
+        if  max_cpu > nb_instances:
+            nb_threads = nb_instances
+        else:
+            nb_threads = max_cpu
+    if output:
+        with Pool(processes=nb_threads) as p:
+            output = p.map(func, params)
+            p.close()
+        return output 
+
+    else: 
+        with Pool(processes=nb_threads) as p:
+            p.map(func, params)
+            p.close()
+        return None 
+    

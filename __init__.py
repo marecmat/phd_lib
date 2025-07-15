@@ -5,3 +5,4 @@ import phd_lib.maths
 import phd_lib.plotting
 import phd_lib.porous
 import phd_lib.remote
+import phd_lib.vtk_stuff

@@ -43,3 +43,21 @@ def extrema(array, return_id=False, mini=False):
         return array[indices]
     else: 
         return indices
+
+def extrema_2D(grid, carte, mins=False, maxs=True, values=True):
+    "returns complex values for the grid real:x, imag:y"
+    if len(grid) > 1:
+        grid = grid[0] + 1j*grid[1]
+
+    out = []
+    if mins:
+        locs = ((carte <= np.roll(carte,  1, 0)) & (carte <= np.roll(carte, -1, 0)) &
+                    (carte <= np.roll(carte,  1, 1)) & (carte <= np.roll(carte, -1, 1)))
+        out.append(grid[locs])
+    if maxs:
+        locs = ((carte >= np.roll(carte,  1, 0)) & (carte >= np.roll(carte, -1, 0)) &
+                    (carte >= np.roll(carte,  1, 1)) & (carte >= np.roll(carte, -1, 1)))
+        out.append(grid[locs])
+    if values:
+        out.append(carte[locs])
+    return out

@@ -7,18 +7,21 @@ def send_discord_notification(title, status, PATH='none'):
         PATH = os.path.dirname(__file__)+"/data/hook"
 
     HOOK = open(PATH, "r").read().strip()
-    
-    result = requests.post(
-        HOOK, 
-        json={
-            "content": " ", 
-            "username" : "Script status",
-            "embeds": [{
-                'description': status, 
-                'title': title
-            }]
-        }
-    )
+    try:
+        result = requests.post(
+            HOOK, 
+            json={
+                "content": " ", 
+                "username" : "Script status",
+                "embeds": [{
+                    'description': status, 
+                    'title': title
+                }]
+            }
+        )
+
+    except requests.exceptions.ConnectionError as err:
+        return err
 
     try:
         result.raise_for_status()
