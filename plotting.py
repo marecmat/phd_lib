@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 PATH = os.path.dirname(__file__)
 sys.path.append(PATH+"/../")
-from phd_lib.colormaps import nice_colors
+# from phd_lib.colormaps import nice_colors
 
 def matplot_header(fontsize=12, tex=True, transparent_background=True, use_gui=True, colors='palette2', tex_packages=[]):
 
@@ -22,15 +22,15 @@ def matplot_header(fontsize=12, tex=True, transparent_background=True, use_gui=T
         plt.rc('mathtext', fontset='cm')
         plt.rc('text.latex', preamble=''.join([fr"\usepackage{{{i}}}" for i in tex_packages]))
     
-    match colors:
-        case 'palette':  cycle = ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"]
-        case 'paultol':  cycle = ["#0077BB", '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377', '#BBBBBB']
-        case 'custom':   cycle = list(nice_colors().values())
-        case 'ibm':      cycle = ["#ffb000", '#dc267f','#785ef0', '#fe6100', '#648fff',]
-        case 'palette2': cycle = ["#332288", '#dc267f', '#8fd687', "#ffb000", "#88CCEE", "#117733", '#785ef0', '#fe6100', '#648fff',]
-        case _:          cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    # match colors:
+    #     case 'palette':  cycle = ["#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#CC6677", "#882255", "#AA4499"]
+    #     case 'paultol':  cycle = ["#0077BB", '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377', '#BBBBBB']
+    #     case 'custom':   cycle = list(nice_colors().values())
+    #     case 'ibm':      cycle = ["#ffb000", '#dc267f','#785ef0', '#fe6100', '#648fff',]
+    #     case 'palette2': cycle = ["#332288", '#dc267f', '#8fd687', "#ffb000", "#88CCEE", "#117733", '#785ef0', '#fe6100', '#648fff',]
+    #     case _:          cycle = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
-    plt.rcParams.update({"axes.prop_cycle" : mpl.cycler(color=cycle)})
+    # plt.rcParams.update({"axes.prop_cycle" : mpl.cycler(color=cycle)})
 
     if transparent_background:
         plt.rcParams.update({
@@ -45,7 +45,7 @@ def matplot_header(fontsize=12, tex=True, transparent_background=True, use_gui=T
             "legend.edgecolor":  (0, 0, 0, 1)
         })
     
-    return cycle
+    return None # cycle
 
 def remove_get_axis_formatters(axes, which='x', sci_lim_low=-2, sci_lim_up=2, useOffset=False):
     """
@@ -265,3 +265,154 @@ def add_arrow(line, arr=0, position=None, direction=None, size=15, color=None):
         arrowprops=dict(arrowstyle="-|>", color=color),
         size=size
     )
+
+
+from matplotlib.transforms import ScaledTranslation
+from matplotlib.font_manager import FontProperties
+
+
+
+
+def fancy_legend(ax, leg=None, axes=None, merge=True, square_box=False, border_lw=.7,
+                 outside=None, match_frame=True, match_width=False,
+                 gap=0.5, pad_inches=0.05, resize=True, max_iter=3, **kwargs):
+    """
+    Merge the legend of several plots into 1, change the frame style, optionally
+    place it outside the axes and resize the figure so everything fits.
+    Works with no layout engine, 'constrained' and 'tight'.
+    Remaining kwargs go to ax.legend (ncol, title, fontsize, ...).
+
+    # INPUT
+        ax: Axes
+            axes the legend is attached to
+        leg: Legend, optional
+            an existing legend to restyle (outside placement is then ignored)
+        axes: array of Axes, optional
+            with merge=True, handles of all these axes go into a single legend
+        square_box: bool
+            square frame corners (pad=0.2, old behaviour)
+        border_lw: float
+            frame linewidth
+        outside: None, 'right', 'left', 'top' or 'bottom'
+            place the legend outside the axes on that side
+        match_frame: bool
+            square corners with pad=0 (frame edge coincides with the axes edge) and the
+            same linewidth/edgecolor as the axes spines (overrides square_box and border_lw)
+        match_width: bool
+            outside='top'/'bottom' only: legend box spans exactly the axes width
+            (all entries on one row unless ncol is given)
+        gap: float
+            axes-legend distance, in units of legend font size
+        pad_inches: float
+            margin kept between legend and figure edge when no layout engine is active
+        resize: bool
+            if False, only place the legend and don't touch the figure size
+        max_iter: int
+            max correction passes if the legend still overflows the figure
+    """
+    def _get_renderer(fig):
+        fig.canvas.draw()  # runs the layout engine (if any), so extents are up to date
+        try:
+            return fig.canvas.get_renderer()
+        except AttributeError:
+            return fig._get_renderer()
+
+
+    def _fit_figure_to_legend(fig, leg, side, gap_in, pad_inches, max_iter):
+        """Enlarge the figure so the legend fits, keeping the axes at their original size."""
+        idx = 0 if side in ('left', 'right') else 1            # 0: width, 1: height
+        engine = fig.get_layout_engine() if hasattr(fig, 'get_layout_engine') else None  # mpl >= 3.6
+        inv = fig.dpi_scale_trans.inverted()                   # pixels -> inches
+        margin = pad_inches if engine is None else 0.0
+
+        def extents():
+            return leg.get_window_extent(_get_renderer(fig)).transformed(inv), fig.bbox_inches
+
+        def overflow(bb, fb):
+            return {'right': bb.x1 - fb.x1, 'left':   fb.x0 - bb.x0,
+                    'top':   bb.y1 - fb.y1, 'bottom': fb.y0 - bb.y0}[side]
+
+        def grow(extra):
+            w, h = fig.get_size_inches()
+            old = (w, h)[idx]
+            new = old + extra
+            if engine is None:
+                # keep axes at the same absolute size/position by rescaling their figure fractions
+                shift = extra if side in ('left', 'bottom') else 0.0
+                for a in fig.axes:
+                    p = a.get_position()
+                    if idx == 0: a.set_position([(p.x0*old + shift)/new, p.y0, p.width*old/new, p.height])
+                    else:        a.set_position([p.x0, (p.y0*old + shift)/new, p.width, p.height*old/new])
+            fig.set_size_inches((new, h) if idx == 0 else (w, new), forward=True)
+
+        bb, fb = extents()
+        if engine is not None:
+            # the engine squeezed the axes to make room for the legend: give that space back
+            grow((bb.width, bb.height)[idx] + gap_in + pad_inches)
+            bb, fb = extents()
+
+        # safety net: fix any remaining clipping
+        for _ in range(max_iter):
+            ov = overflow(bb, fb)
+            if ov + margin <= 1e-3:
+                break
+            grow(ov + margin)
+            bb, fb = extents()
+
+    fig = ax.figure
+
+    if leg is None and outside is not None:
+        anchors = {'right':  ('center left',  (1.0, 0.5)),
+                   'left':   ('center right', (0.0, 0.5)),
+                   'top':    ('lower center', (0.5, 1.0)),
+                   'bottom': ('upper center', (0.5, 0.0))}
+        if outside not in anchors:
+            raise ValueError(f"outside must be one of {list(anchors)}, got {outside!r}")
+        loc, anchor = anchors[outside]
+        opts = dict(loc=loc, bbox_to_anchor=anchor, bbox_transform=ax.transAxes, borderaxespad=gap)
+
+        fs = FontProperties(size=kwargs.get('fontsize', plt.rcParams['legend.fontsize'])).get_size_in_points()
+        gap_in = gap * fs / 72
+
+        if match_width:
+            if outside not in ('top', 'bottom'):
+                raise ValueError("match_width only works with outside='top' or 'bottom'")
+            up = outside == 'top'
+            # expand mode stretches the legend over the anchor bbox (= axes width), so no horizontal
+            # borderaxespad; the gap is applied as a vertical offset in inches instead
+            opts = dict(
+                loc='lower left' if up else 'upper left',
+                bbox_to_anchor=(0, 1 if up else 0, 1, 0),
+                bbox_transform=ax.transAxes + ScaledTranslation(0, (1 if up else -1) * gap_in, fig.dpi_scale_trans),
+                mode='expand', borderaxespad=0,
+                ncol=max(len(ax.get_legend_handles_labels()[0]), 1),
+            )
+        opts.update(kwargs)
+        kwargs = opts
+    else:
+        outside = None  # nothing to place or resize
+
+    if axes is not None and merge:
+        handles, labels = [], []
+        for a in np.atleast_1d(axes).flatten():
+            h, l = a.get_legend_handles_labels()
+            handles += h; labels += l
+        leg = ax.legend(handles, labels, **kwargs)
+    elif leg is None:
+        leg = ax.legend(**kwargs)
+
+    # frame style
+    leg.get_frame().set_linewidth(border_lw)
+    if square_box:
+        leg.get_frame().set_boxstyle('Square', pad=0.2)
+    if match_frame:
+        spine = ax.spines['left']
+        frame = leg.get_frame()
+        frame.set_boxstyle('square', pad=0)
+        frame.set_linewidth(spine.get_linewidth())
+        frame.set_edgecolor(spine.get_edgecolor())
+
+    if outside is not None and resize:
+        _fit_figure_to_legend(fig, leg, outside, gap_in, pad_inches, max_iter)
+
+    return leg
